@@ -7,7 +7,7 @@ import numpy as np
 from matplotlib import colormaps
 
 from beamforming_sim.array_geometry import MicrophoneArray
-from beamforming_sim.scene import ScanPlane
+from beamforming_sim.scene import ScanPlane, SourceModel
 
 
 def plot_array_layout(array: MicrophoneArray, output_path: str | Path) -> Path:
@@ -120,6 +120,103 @@ def tick_values(extent_m: tuple[float, float], step_m: float = 0.1) -> np.ndarra
         raise ValueError("step_m must be positive")
     count = int(round((extent_m[1] - extent_m[0]) / step_m)) + 1
     return np.round(extent_m[0] + step_m * np.arange(count, dtype=float), decimals=12)
+
+
+def plot_microphone_signals(
+    time_s: np.ndarray,
+    signals: np.ndarray,
+    array: MicrophoneArray,
+    output_path: str | Path,
+    channel_indices: list[int] | None = None,
+    title: str | None = None,
+) -> Path:
+    """绘制选定通道的时域波形，垂直偏移以展示通道间相位差。
+
+    默认每臂取一个阵元（8 路），避免 64 路过密。
+    """
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if channel_indices is None:
+        elements_per_arm = len(array.positions_m) // array.config.arms
+        channel_indices = list(range(0, len(array.positions_m), elements_per_arm))
+
+    sample_count = min(len(time_s), 150)
+    t = time_s[:sample_count]
+
+    fig, ax = plt.subplots(figsize=(8, 3.5))
+    offset_step = 1.5 * float(np.max(np.abs(signals)))
+
+    for idx, ch in enumerate(channel_indices):
+        y = signals[ch, :sample_count] + idx * offset_step
+        ax.plot(t * 1e3, y, linewidth=0.6, label=f"ch{ch}")
+
+    ax.set_xlabel("t / ms")
+    ax.set_ylabel("amplitude (offset for clarity)")
+    if title:
+        ax.set_title(title)
+    else:
+        ax.set_title("Microphone signals (one per arm)")
+    ax.legend(loc="upper right", fontsize=6, ncol=2, framealpha=0.5)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+    return output_path
+
+
+def plot_source_signals(
+    source_model: SourceModel,
+    sampling_rate_hz: float,
+    duration_s: float,
+    output_path: str | Path,
+    noise_std: float = 0.0,
+    random_seed: int | None = None,
+    title: str | None = None,
+) -> Path:
+    """绘制声源发射端的原始正弦波形，可选叠加加性高斯白噪声。
+
+    noise_std > 0 时生成三列子图：纯净信号 | AWGN | 叠噪信号。
+    """
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    sample_count = int(round(sampling_rate_hz * min(duration_s, 0.002)))
+    t = np.arange(sample_count) / sampling_rate_hz
+    source = source_model.sources[0]
+    clean = source.amplitude * np.sin(2.0 * np.pi * source.frequency_hz * t + source.phase_rad)
+
+    if noise_std > 0:
+        rng = np.random.default_rng(random_seed)
+        noise = rng.normal(loc=0.0, scale=noise_std, size=sample_count)
+        noisy = clean + noise
+
+        fig, axes = plt.subplots(3, 1, figsize=(8, 5.5))
+        labels = ("clean signal", "AWGN (σ={:.2f})".format(noise_std), "signal + noise")
+        data = (clean, noise, noisy)
+        colors = ("#1f77b4", "#d62728", "#9467bd")
+        for ax, label, y, color in zip(axes, labels, data, colors):
+            ax.plot(t * 1e6, y, linewidth=0.5, color=color)
+            ax.set_title(label, fontsize=10)
+            ax.set_xlabel("t / µs")
+            ax.tick_params(labelsize=7)
+    else:
+        fig, axes = plt.subplots(1, 1, figsize=(8, 2.8), squeeze=False)
+        ax = axes[0, 0]
+        ax.plot(t * 1e6, clean, linewidth=0.7)
+        ax.set_ylabel(f"{source.frequency_hz / 1000:.0f} kHz" if source.frequency_hz >= 1000 else f"{source.frequency_hz:.0f} Hz")
+        ax.tick_params(labelsize=7)
+        ax.set_xlabel("t / µs")
+
+    if title:
+        fig.suptitle(title, fontsize=12)
+    else:
+        fig.suptitle("Source waveform (emission point)", fontsize=12)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+    return output_path
 
 
 def _image_extent(plane: ScanPlane) -> tuple[float, float, float, float]:
