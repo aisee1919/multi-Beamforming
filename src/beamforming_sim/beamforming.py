@@ -123,6 +123,82 @@ def _normalize_energy(energy: np.ndarray) -> np.ndarray:
     return energy / max_energy
 
 
+def functional_beamforming(
+    array: MicrophoneArray,
+    plane: ScanPlane,
+    signals: np.ndarray,
+    sampling_rate_hz: float,
+    frequency_hz: float,
+    nu: int = 2,
+    sound_speed_m_s: float = 343.0,
+) -> np.ndarray:
+    """函数波束形成 (Functional Beamforming)。
+
+    B_FB(ν, x) = [w(x)^H · C^(1/ν) · w(x)]^ν
+
+    ν = 1 时退化为 CBF；ν 越大，主瓣越窄，旁瓣抑制越强。
+    """
+
+    if nu < 1 or not isinstance(nu, int):
+        raise ValueError("nu must be a positive integer")
+    _validate_cbf_inputs(array, signals, sampling_rate_hz, frequency_hz, sound_speed_m_s)
+    csm = compute_cross_spectral_matrix(signals, sampling_rate_hz, frequency_hz)
+    csm_pow = _csm_power_eig(csm, 1.0 / nu)
+    return _fb_from_csm(array, plane, csm_pow, nu, frequency_hz, sound_speed_m_s)
+
+
+def run_fb_for_planes(
+    array: MicrophoneArray,
+    planes: list[ScanPlane],
+    signals: np.ndarray,
+    sampling_rate_hz: float,
+    frequency_hz: float,
+    nu: int = 2,
+    sound_speed_m_s: float = 343.0,
+) -> dict[float, np.ndarray]:
+    """对多个扫描平面分别执行 FB。CSM^(1/ν) 只计算一次。"""
+
+    if nu < 1 or not isinstance(nu, int):
+        raise ValueError("nu must be a positive integer")
+    _validate_cbf_inputs(array, signals, sampling_rate_hz, frequency_hz, sound_speed_m_s)
+    csm = compute_cross_spectral_matrix(signals, sampling_rate_hz, frequency_hz)
+    csm_pow = _csm_power_eig(csm, 1.0 / nu)
+    return {
+        plane.distance_m: _fb_from_csm(array, plane, csm_pow, nu, frequency_hz, sound_speed_m_s)
+        for plane in planes
+    }
+
+
+def _csm_power_eig(csm: np.ndarray, exponent: float) -> np.ndarray:
+    """通过特征分解计算 CSM 的分数次幂 C^exponent = U · Σ^exponent · U^H。"""
+
+    eigenvalues, eigenvectors = np.linalg.eigh(csm)
+    eigenvalues = np.maximum(eigenvalues, 0.0)
+    powered_eigenvalues = eigenvalues**exponent
+    return (eigenvectors * powered_eigenvalues[None, :]) @ eigenvectors.conj().T
+
+
+def _fb_from_csm(
+    array: MicrophoneArray,
+    plane: ScanPlane,
+    csm_pow: np.ndarray,
+    nu: int,
+    frequency_hz: float,
+    sound_speed_m_s: float,
+) -> np.ndarray:
+    """用向量化 einsum 计算所有扫描点的 FB 能量。"""
+
+    steering = _steering_matrix(array.positions_m, plane.points_m, frequency_hz, sound_speed_m_s)
+    normalization = np.sum(np.abs(steering) ** 2, axis=1, keepdims=True)
+    weights = steering / normalization
+    # w^H · C^(1/ν) · w
+    raw = np.einsum("pm,mn,pn->p", weights.conj(), csm_pow, weights, optimize=True).real
+    raw = np.maximum(raw, 0.0)
+    # 升幂到 ν，产生更尖锐的主瓣
+    energy = raw**nu
+    return _normalize_energy(energy)
+
+
 def _validate_cbf_inputs(
     array: MicrophoneArray,
     signals: np.ndarray,
