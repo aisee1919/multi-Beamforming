@@ -50,10 +50,6 @@ def plot_energy_heatmap(
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    expected_size = len(plane.x_coordinates_m) * len(plane.y_coordinates_m)
-    if energy.size != expected_size:
-        raise ValueError("energy size must match scan plane grid size")
-
     db_grid = energy_to_db(np.asarray(energy, dtype=float), floor_db=floor_db).reshape(
         len(plane.y_coordinates_m),
         len(plane.x_coordinates_m),
@@ -123,8 +119,6 @@ def energy_to_db(energy: np.ndarray, floor_db: float = -50.0) -> np.ndarray:
 def tick_values(extent_m: tuple[float, float], step_m: float = 0.1) -> np.ndarray:
     """生成图上显示用的坐标刻度，不影响 CBF 实际扫描步长。"""
 
-    if step_m <= 0:
-        raise ValueError("step_m must be positive")
     count = int(round((extent_m[1] - extent_m[0]) / step_m)) + 1
     return np.round(extent_m[0] + step_m * np.arange(count, dtype=float), decimals=12)
 

@@ -41,9 +41,6 @@ def run_damas_fista_single_source_experiment(
     0.01 m 默认网格上触发高成本反卷积。
     """
 
-    if scan_step_m <= 0:
-        raise ValueError("scan_step_m must be positive")
-
     config = config or ExperimentConfig()
     tick_step = 0.1 if scan_step_m >= 0.1 else scan_step_m * 2
 

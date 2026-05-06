@@ -25,14 +25,6 @@ class BeamformingResult:
 
     def __post_init__(self) -> None:
         power = np.asarray(self.raw_power, dtype=float)
-        if power.ndim != 1:
-            raise ValueError("raw_power must be a 1D array")
-        if power.shape != (len(self.plane.points_m),):
-            raise ValueError("raw_power length must match scan plane point count")
-        if self.frequency_hz <= 0:
-            raise ValueError("frequency_hz must be positive")
-        if self.sound_speed_m_s <= 0:
-            raise ValueError("sound_speed_m_s must be positive")
 
         object.__setattr__(self, "raw_power", power.copy())
         object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))

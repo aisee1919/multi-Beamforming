@@ -41,7 +41,6 @@ def create_eight_arm_spiral_array(config: SpiralArrayConfig | None = None) -> Mi
     """
 
     config = config or SpiralArrayConfig()
-    _validate_config(config)
 
     elements_per_arm = config.elements // config.arms
     max_radius = config.aperture_m / 2.0
@@ -58,18 +57,3 @@ def create_eight_arm_spiral_array(config: SpiralArrayConfig | None = None) -> Mi
             positions.append([radius * np.cos(angle), radius * np.sin(angle), 0.0])
 
     return MicrophoneArray(positions_m=np.asarray(positions, dtype=float), config=config)
-
-
-def _validate_config(config: SpiralArrayConfig) -> None:
-    """校验阵列参数，提前暴露不满足实验设定的输入。"""
-
-    if config.elements <= 0:
-        raise ValueError("elements must be positive")
-    if config.arms <= 0:
-        raise ValueError("arms must be positive")
-    if config.elements % config.arms != 0:
-        raise ValueError("elements must be divisible by arms")
-    if config.aperture_m <= 0:
-        raise ValueError("aperture_m must be positive")
-    if config.spiral_turns < 0:
-        raise ValueError("spiral_turns must be non-negative")

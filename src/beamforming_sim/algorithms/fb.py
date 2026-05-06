@@ -4,12 +4,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from beamforming_sim.algorithms.base import CsmBasedBeamformer, validate_beamforming_inputs, validate_csm
+from beamforming_sim.algorithms.base import CsmBasedBeamformer
 from beamforming_sim.algorithms.cbf import point_chunks, quadratic_power_from_steering, steering_matrix
 from beamforming_sim.array_geometry import MicrophoneArray
 from beamforming_sim.domain import BeamformingResult
 from beamforming_sim.scene import ScanPlane
-from beamforming_sim.spectral import compute_cross_spectral_matrix
 
 
 @dataclass(frozen=True)
@@ -18,10 +17,6 @@ class FunctionalBeamformer(CsmBasedBeamformer):
 
     nu: int = 2
     scan_chunk_size: int | None = None
-
-    def __post_init__(self) -> None:
-        if not isinstance(self.nu, int) or self.nu < 1:
-            raise ValueError("nu must be a positive integer")
 
     @property
     def name(self) -> str:
@@ -35,7 +30,6 @@ class FunctionalBeamformer(CsmBasedBeamformer):
         frequency_hz: float,
         sound_speed_m_s: float = 343.0,
     ) -> BeamformingResult:
-        validate_csm(array, csm)
         csm_pow = csm_power_eig(csm, 1.0 / self.nu)
         power = fb_power_from_transformed_csm(
             array,
@@ -67,7 +61,6 @@ def fb_power_from_transformed_csm(
 ) -> np.ndarray:
     """使用 CSM^(1/nu) 计算 FB 原始功率。"""
 
-    validate_csm(array, transformed_csm)
     power = np.empty(len(plane.points_m), dtype=float)
     for start, stop in point_chunks(len(plane.points_m), scan_chunk_size):
         steering = steering_matrix(array.positions_m, plane.points_m[start:stop], frequency_hz, sound_speed_m_s)
@@ -83,38 +76,3 @@ def csm_power_eig(csm: np.ndarray, exponent: float) -> np.ndarray:
     eigenvalues = np.maximum(eigenvalues, 0.0)
     powered_eigenvalues = eigenvalues**exponent
     return (eigenvectors * powered_eigenvalues[None, :]) @ eigenvectors.conj().T
-
-
-def functional_beamforming(
-    array: MicrophoneArray,
-    plane: ScanPlane,
-    signals: np.ndarray,
-    sampling_rate_hz: float,
-    frequency_hz: float,
-    nu: int = 2,
-    sound_speed_m_s: float = 343.0,
-) -> np.ndarray:
-    """兼容入口：返回归一化后的 FB 能量图。"""
-
-    result = FunctionalBeamformer(nu=nu).run(array, plane, signals, sampling_rate_hz, frequency_hz, sound_speed_m_s)
-    return result.normalized_power()
-
-
-def run_fb_for_planes(
-    array: MicrophoneArray,
-    planes: list[ScanPlane],
-    signals: np.ndarray,
-    sampling_rate_hz: float,
-    frequency_hz: float,
-    nu: int = 2,
-    sound_speed_m_s: float = 343.0,
-) -> dict[float, np.ndarray]:
-    """兼容入口：复用 CSM 后对多个扫描平面返回归一化 FB 能量图。"""
-
-    validate_beamforming_inputs(array, signals, sampling_rate_hz, frequency_hz, sound_speed_m_s)
-    csm = compute_cross_spectral_matrix(signals, sampling_rate_hz, frequency_hz)
-    beamformer = FunctionalBeamformer(nu=nu)
-    return {
-        plane.distance_m: beamformer.run_from_csm(array, plane, csm, frequency_hz, sound_speed_m_s).normalized_power()
-        for plane in planes
-    }

@@ -1,9 +1,8 @@
 import numpy as np
 
+from beamforming_sim.algorithms import ConventionalBeamformer, FunctionalBeamformer
 from beamforming_sim.algorithms.fb import csm_power_eig
 from beamforming_sim.array_geometry import create_eight_arm_spiral_array
-from beamforming_sim.algorithms.cbf import conventional_beamforming
-from beamforming_sim.algorithms.fb import functional_beamforming, run_fb_for_planes
 from beamforming_sim.spectral import compute_cross_spectral_matrix
 from beamforming_sim.scene import AcousticSource, SourceModel, create_default_sources, create_scan_planes
 from beamforming_sim.signals import simulate_microphone_signals
@@ -16,8 +15,12 @@ def test_fb_nu1_equals_cbf():
     source_model = SourceModel([AcousticSource(position_m=np.array([0.0, 0.0, 1.2]))])
     _, signals = simulate_microphone_signals(array, source_model, duration_s=0.01, noise_std=0.0)
 
-    cbf_energy = conventional_beamforming(array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000)
-    fb_energy = functional_beamforming(array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000, nu=1)
+    cbf_energy = ConventionalBeamformer().run(
+        array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000
+    ).normalized_power()
+    fb_energy = FunctionalBeamformer(nu=1).run(
+        array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000
+    ).normalized_power()
 
     assert np.allclose(fb_energy, cbf_energy)
 
@@ -30,7 +33,9 @@ def test_fb_peak_matches_source_location():
     _, signals = simulate_microphone_signals(array, source_model, duration_s=0.01, noise_std=0.0)
 
     for nu in (2, 4, 8):
-        energy = functional_beamforming(array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000, nu=nu)
+        energy = FunctionalBeamformer(nu=nu).run(
+            array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000
+        ).normalized_power()
         peak_point = plane.points_m[int(np.argmax(energy))]
         assert np.allclose(peak_point, [0.0, 0.0, 1.2]), f"nu={nu}: peak at {peak_point}"
         assert np.isclose(np.max(energy), 1.0), f"nu={nu}: max energy {np.max(energy)}"
@@ -55,9 +60,14 @@ def test_fb_runs_for_multiple_planes():
     planes = create_scan_planes(distances_m=(1.2, 1.6, 2.0), extent_m=(-0.6, 0.6), step_m=0.01)
     source_model = create_default_sources()
     _, signals = simulate_microphone_signals(array, source_model, duration_s=0.01, noise_std=0.0, random_seed=42)
+    csm = compute_cross_spectral_matrix(signals, sampling_rate_hz=192_000, frequency_hz=25_000)
 
     for nu in (2, 4):
-        plane_energy = run_fb_for_planes(array, planes, signals, sampling_rate_hz=192_000, frequency_hz=25_000, nu=nu)
+        beamformer = FunctionalBeamformer(nu=nu)
+        plane_energy = {
+            plane.distance_m: beamformer.run_from_csm(array, plane, csm, frequency_hz=25_000).normalized_power()
+            for plane in planes
+        }
         assert set(plane_energy) == {1.2, 1.6, 2.0}
         for plane in planes:
             energy = plane_energy[plane.distance_m]
@@ -76,7 +86,9 @@ def test_higher_nu_produces_sharper_peak():
 
     fwhm_values = {}
     for nu in (1, 2, 4, 8):
-        energy = functional_beamforming(array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000, nu=nu)
+        energy = FunctionalBeamformer(nu=nu).run(
+            array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000
+        ).normalized_power()
         half_max = np.max(energy) / 2.0
         above_half = energy >= half_max
         fwhm = float(np.sum(above_half)) * 0.02  # 点数 × 步长 → 宽度(m)

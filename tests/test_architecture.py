@@ -2,7 +2,6 @@ import numpy as np
 
 from beamforming_sim.algorithms import ConventionalBeamformer, FFTFISTABeamformer, FunctionalBeamformer
 from beamforming_sim.array_geometry import create_eight_arm_spiral_array
-from beamforming_sim.algorithms.cbf import conventional_beamforming
 from beamforming_sim.domain import BeamformingResult
 from beamforming_sim.experiments import ExperimentConfig, build_single_source_cases
 from beamforming_sim.scene import AcousticSource, SourceModel, create_scan_planes
@@ -30,13 +29,14 @@ def test_new_algorithm_api_returns_raw_power_result():
     assert np.isclose(np.max(result.normalized_power()), 1.0)
 
 
-def test_legacy_cbf_function_stays_normalized_for_existing_callers():
+def test_result_normalization_is_explicit_on_result_object():
     array = create_eight_arm_spiral_array()
     plane = create_scan_planes(distances_m=(1.2,), extent_m=(-0.2, 0.2), step_m=0.2)[0]
     source_model = SourceModel([AcousticSource(position_m=np.array([0.0, 0.0, 1.2]))])
     _, signals = simulate_microphone_signals(array, source_model, duration_s=0.01, noise_std=0.0)
 
-    energy = conventional_beamforming(array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000)
+    result = ConventionalBeamformer().run(array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000)
+    energy = result.normalized_power()
 
     assert isinstance(energy, np.ndarray)
     assert np.isclose(np.max(energy), 1.0)

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from beamforming_sim.algorithms.base import CsmBasedBeamformer, validate_csm
+from beamforming_sim.algorithms.base import CsmBasedBeamformer
 from beamforming_sim.algorithms.cbf import cbf_power_from_csm, steering_matrix
 from beamforming_sim.array_geometry import MicrophoneArray
 from beamforming_sim.domain import BeamformingResult
@@ -24,14 +24,6 @@ class FFTFISTABeamformer(CsmBasedBeamformer):
     max_iterations: int = 200
     tolerance: float = 1e-6
 
-    def __post_init__(self) -> None:
-        if self.lambda_reg < 0:
-            raise ValueError("lambda_reg must be non-negative")
-        if self.max_iterations <= 0:
-            raise ValueError("max_iterations must be positive")
-        if self.tolerance <= 0:
-            raise ValueError("tolerance must be positive")
-
     @property
     def name(self) -> str:
         return "FFT-FISTA"
@@ -45,7 +37,6 @@ class FFTFISTABeamformer(CsmBasedBeamformer):
         sound_speed_m_s: float = 343.0,
     ) -> BeamformingResult:
         """从 CSM 出发：计算 CBF dirty map → FISTA 反卷积。"""
-        validate_csm(array, csm)
         dirty_map = cbf_power_from_csm(array, plane, csm, frequency_hz, sound_speed_m_s)
         return self._deconvolve(array, plane, dirty_map, frequency_hz, sound_speed_m_s)
 
@@ -145,8 +136,6 @@ def _fista_deconvolution(
 
     H = np.fft.fft2(np.fft.ifftshift(psf_2d))
     L = float(np.max(np.abs(H) ** 2))
-    if L <= 0:
-        raise ValueError("Lipschitz constant must be positive")
 
     x = np.zeros_like(dirty_map)
     y = x.copy()

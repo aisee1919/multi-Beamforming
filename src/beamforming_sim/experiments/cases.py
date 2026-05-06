@@ -40,7 +40,5 @@ def build_single_source_cases(source_model: SourceModel, planes: list[ScanPlane]
     cases: list[SourceCase] = []
     for source_index, source in enumerate(source_model.sources, start=1):
         distance_m = float(source.position_m[2])
-        if distance_m not in plane_by_distance:
-            raise ValueError("source z position must match one scan plane distance")
         cases.append(SourceCase(index=source_index, source=source, plane=plane_by_distance[distance_m]))
     return cases

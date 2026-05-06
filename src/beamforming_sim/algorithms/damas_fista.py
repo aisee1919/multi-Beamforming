@@ -28,16 +28,6 @@ class DAMASFISTABeamformer:
     scan_chunk_size: int = 256
     max_point_count: int | None = 5000
 
-    def __post_init__(self) -> None:
-        if self.max_iterations <= 0:
-            raise ValueError("max_iterations must be positive")
-        if self.tolerance <= 0:
-            raise ValueError("tolerance must be positive")
-        if self.dense_point_limit <= 0:
-            raise ValueError("dense_point_limit must be positive")
-        if self.scan_chunk_size <= 0:
-            raise ValueError("scan_chunk_size must be positive")
-
     @property
     def name(self) -> str:
         return "DAMAS-FISTA"
@@ -57,13 +47,6 @@ class DAMASFISTABeamformer:
 
         plane = cbf_result.plane
         n_points = len(plane.points_m)
-
-        if self.max_point_count is not None and n_points > self.max_point_count:
-            raise ValueError(
-                f"DAMAS-FISTA point count ({n_points}) exceeds max_point_count "
-                f"({self.max_point_count}). Use a coarser grid or explicitly "
-                f"override max_point_count."
-            )
 
         t0 = time.perf_counter()
 

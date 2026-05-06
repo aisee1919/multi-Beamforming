@@ -6,8 +6,6 @@ from beamforming_sim.algorithms import (
     FFTFISTABeamformer,
     FunctionalBeamformer,
 )
-from beamforming_sim.algorithms.cbf import conventional_beamforming, run_cbf_for_planes
-from beamforming_sim.algorithms.fb import functional_beamforming, run_fb_for_planes
 from beamforming_sim.array_geometry import MicrophoneArray, SpiralArrayConfig, create_eight_arm_spiral_array
 from beamforming_sim.domain import BeamformingResult
 from beamforming_sim.experiments import BeamformingExperiment, ExperimentConfig
@@ -29,12 +27,8 @@ __all__ = [
     "SourceModel",
     "SpiralArrayConfig",
     "compute_cross_spectral_matrix",
-    "conventional_beamforming",
     "create_default_sources",
     "create_eight_arm_spiral_array",
     "create_scan_planes",
-    "functional_beamforming",
-    "run_cbf_for_planes",
-    "run_fb_for_planes",
     "simulate_microphone_signals",
 ]

@@ -4,19 +4,15 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from beamforming_sim.algorithms.base import CsmBasedBeamformer, validate_beamforming_inputs, validate_csm
+from beamforming_sim.algorithms.base import CsmBasedBeamformer
 from beamforming_sim.array_geometry import MicrophoneArray
 from beamforming_sim.domain import BeamformingResult
 from beamforming_sim.scene import ScanPlane
-from beamforming_sim.spectral import compute_cross_spectral_matrix
 
 
 @dataclass(frozen=True)
 class ConventionalBeamformer(CsmBasedBeamformer):
-    """传统波束形成算法。
-
-    类接口返回原始功率；旧函数接口需要兼容历史行为时再做归一化。
-    """
+    """传统波束形成算法。"""
 
     scan_chunk_size: int | None = None
 
@@ -32,7 +28,6 @@ class ConventionalBeamformer(CsmBasedBeamformer):
         frequency_hz: float,
         sound_speed_m_s: float = 343.0,
     ) -> BeamformingResult:
-        validate_csm(array, csm)
         power = cbf_power_from_csm(
             array,
             plane,
@@ -60,7 +55,6 @@ def cbf_power_from_csm(
 ) -> np.ndarray:
     """使用 P = w^H R w 计算扫描平面的 CBF 原始功率。"""
 
-    validate_csm(array, csm)
     power = np.empty(len(plane.points_m), dtype=float)
     for start, stop in point_chunks(len(plane.points_m), scan_chunk_size):
         steering = steering_matrix(array.positions_m, plane.points_m[start:stop], frequency_hz, sound_speed_m_s)
@@ -95,42 +89,4 @@ def point_chunks(point_count: int, scan_chunk_size: int | None) -> list[tuple[in
 
     if scan_chunk_size is None:
         return [(0, point_count)]
-    if scan_chunk_size <= 0:
-        raise ValueError("scan_chunk_size must be positive")
     return [(start, min(start + scan_chunk_size, point_count)) for start in range(0, point_count, scan_chunk_size)]
-
-
-def conventional_beamforming(
-    array: MicrophoneArray,
-    plane: ScanPlane,
-    signals: np.ndarray,
-    sampling_rate_hz: float,
-    frequency_hz: float,
-    sound_speed_m_s: float = 343.0,
-) -> np.ndarray:
-    """兼容入口：返回归一化后的 CBF 能量图。
-
-    新代码应优先使用 ConventionalBeamformer().run(...) 获取原始功率结果。
-    """
-
-    result = ConventionalBeamformer().run(array, plane, signals, sampling_rate_hz, frequency_hz, sound_speed_m_s)
-    return result.normalized_power()
-
-
-def run_cbf_for_planes(
-    array: MicrophoneArray,
-    planes: list[ScanPlane],
-    signals: np.ndarray,
-    sampling_rate_hz: float,
-    frequency_hz: float,
-    sound_speed_m_s: float = 343.0,
-) -> dict[float, np.ndarray]:
-    """兼容入口：复用 CSM 后对多个扫描平面返回归一化 CBF 能量图。"""
-
-    validate_beamforming_inputs(array, signals, sampling_rate_hz, frequency_hz, sound_speed_m_s)
-    csm = compute_cross_spectral_matrix(signals, sampling_rate_hz, frequency_hz)
-    beamformer = ConventionalBeamformer()
-    return {
-        plane.distance_m: beamformer.run_from_csm(array, plane, csm, frequency_hz, sound_speed_m_s).normalized_power()
-        for plane in planes
-    }

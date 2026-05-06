@@ -1,7 +1,7 @@
 import numpy as np
 
 from beamforming_sim.array_geometry import create_eight_arm_spiral_array
-from beamforming_sim.algorithms.cbf import conventional_beamforming, run_cbf_for_planes
+from beamforming_sim.algorithms import ConventionalBeamformer
 from beamforming_sim.spectral import compute_cross_spectral_matrix
 from beamforming_sim.scene import AcousticSource, SourceModel, create_default_sources, create_scan_planes
 from beamforming_sim.signals import simulate_microphone_signals
@@ -19,7 +19,8 @@ def test_cbf_peak_matches_single_source_on_scan_grid():
         noise_std=0.0,
     )
 
-    energy = conventional_beamforming(array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000)
+    result = ConventionalBeamformer().run(array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000)
+    energy = result.normalized_power()
 
     peak_point = plane.points_m[int(np.argmax(energy))]
     assert np.allclose(peak_point, [0.0, 0.0, 1.2])
@@ -45,7 +46,8 @@ def test_vectorized_cbf_matches_pointwise_reference_formula():
     _, signals = simulate_microphone_signals(array, source_model, duration_s=0.01, noise_std=0.0)
     csm = compute_cross_spectral_matrix(signals, sampling_rate_hz=192_000, frequency_hz=25_000)
 
-    actual = conventional_beamforming(array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000)
+    result = ConventionalBeamformer().run_from_csm(array, plane, csm, frequency_hz=25_000)
+    actual = result.normalized_power()
     expected = _pointwise_cbf_reference(array.positions_m, plane.points_m, csm, frequency_hz=25_000)
 
     assert np.allclose(actual, expected)
@@ -64,7 +66,12 @@ def test_cbf_runs_for_all_three_scan_planes():
         random_seed=42,
     )
 
-    plane_energy = run_cbf_for_planes(array, planes, signals, sampling_rate_hz=192_000, frequency_hz=25_000)
+    csm = compute_cross_spectral_matrix(signals, sampling_rate_hz=192_000, frequency_hz=25_000)
+    beamformer = ConventionalBeamformer()
+    plane_energy = {
+        plane.distance_m: beamformer.run_from_csm(array, plane, csm, frequency_hz=25_000).normalized_power()
+        for plane in planes
+    }
 
     assert set(plane_energy) == {1.2, 1.6, 2.0}
     for plane in planes:

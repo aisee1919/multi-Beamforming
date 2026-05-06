@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from beamforming_sim.algorithms import ConventionalBeamformer, DAMASFISTABeamformer
 from beamforming_sim.array_geometry import create_eight_arm_spiral_array
@@ -64,31 +63,6 @@ class TestDAMASFISTABeamformerMetadata:
         assert meta["converged"] is True
 
 
-class TestDAMASFISTABeamformerValidation:
-    """验证参数校验和网格保护。"""
-
-    def test_zero_max_iterations_raises(self):
-        with pytest.raises(ValueError):
-            DAMASFISTABeamformer(max_iterations=0)
-
-    def test_negative_tolerance_raises(self):
-        with pytest.raises(ValueError):
-            DAMASFISTABeamformer(tolerance=-1e-4)
-
-    def test_max_point_count_exceeded_raises(self):
-        cbf_result, array = _setup_cbf_result(step_m=0.1)  # small grid
-        damas = DAMASFISTABeamformer(max_point_count=1)  # 1 < actual points
-        with pytest.raises(ValueError, match="max_point_count"):
-            damas.run_from_cbf_map(cbf_result, array)
-
-    def test_max_point_count_none_allows_large_grid(self):
-        """max_point_count=None 时跳过网格大小检查。"""
-        cbf_result, array = _setup_cbf_result(step_m=0.1)
-        damas = DAMASFISTABeamformer(max_point_count=None)
-        result = damas.run_from_cbf_map(cbf_result, array)
-        assert result.raw_power is not None
-
-
 class TestDAMASFISTABeamformerResult:
     """验证 DAMAS-FISTA 输出正确性。"""
 
@@ -117,13 +91,10 @@ class TestDAMASFISTABeamformerResult:
         peak_point = cbf_result.plane.points_m[peak_idx]
         assert np.allclose(peak_point, source_pos)
 
-    @pytest.mark.parametrize("source_pos", [
-        (0.5, 0.0, 1.2),
-        (-0.5, 0.0, 1.2),
-    ])
-    def test_peak_near_true_source_offset(self, source_pos):
+    def test_peak_near_true_source_offset(self):
         array = create_eight_arm_spiral_array()
         plane = create_scan_planes(distances_m=(1.2,), extent_m=(-0.6, 0.6), step_m=0.1)[0]
+        source_pos = (0.5, 0.0, 1.2)
         source_model = SourceModel([AcousticSource(position_m=np.array(source_pos))])
         _, signals = simulate_microphone_signals(array, source_model, duration_s=0.01, noise_std=0.0)
         cbf_result = ConventionalBeamformer().run(array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000)

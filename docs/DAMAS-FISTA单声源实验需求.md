@@ -9,6 +9,7 @@
 3. 专用脚本保留为 `scripts/run_damas_fista_single_source.py`。
 4. `main.py` 新增 `--include-damas-fista`，显式运行 DAMAS-FISTA；默认流程仍只跑 CBF、FB、FFT-FISTA。
 5. WSL 环境使用 `.venv-wsl`，验证命令为 `.venv-wsl/bin/python -m pytest -q`。
+6. 项目已明确为实验性项目，移除 `max_point_count` 网格保护和参数校验类测试；是否跑大网格由调用脚本参数决定。
 
 保持显式入口的原因：默认 `0.01 m` 网格有 14641 个扫描点，DAMAS-FISTA 精确 PSF 算子成本明显高于 CBF/FB/FFT-FISTA，不应在无用户确认的默认入口中强制运行。
 
@@ -170,19 +171,9 @@ converged = relative_change < tolerance
 
 这样可以区分“跑完最大迭代次数”和“实际收敛”。
 
-### 3. 增加网格保护
+### 3. 网格规模
 
-建议增加显式保护参数：
-
-```python
-max_point_count: int | None = 5000
-```
-
-如果扫描点数超过限制，除非用户显式关闭限制，否则报错：
-
-```text
-DAMAS-FISTA point count exceeds max_point_count. Use a coarser grid or explicitly override max_point_count.
-```
+当前实现不做运行时网格保护。项目是实验性代码，默认脚本使用 `step=0.1 m`，更密网格由实验者显式指定并自行接受耗时。
 
 ## 实验流程
 
@@ -288,9 +279,8 @@ outputs/damas_fista_single_source/metrics.csv
 
 1. `run_from_cbf_map()` 默认使用 `cbf_result.frequency_hz`。
 2. DAMAS-FISTA metadata 包含 `converged`。
-3. 超过 `max_point_count` 时会报错。
-4. 单声源 case 构造时，每个 `SourceModel` 只有一个声源。
-5. 小网格单声源 DAMAS-FISTA 峰值位置正确。
+3. 单声源 case 构造时，每个 `SourceModel` 只有一个声源。
+4. 小网格单声源 DAMAS-FISTA 峰值位置正确。
 
 运行：
 

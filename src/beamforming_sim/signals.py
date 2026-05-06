@@ -20,15 +20,6 @@ def simulate_microphone_signals(
     每个麦克风通道为所有点声源的传播时延正弦叠加；noise_std > 0 时加入加性高斯白噪声。
     """
 
-    if sampling_rate_hz <= 0:
-        raise ValueError("sampling_rate_hz must be positive")
-    if duration_s <= 0:
-        raise ValueError("duration_s must be positive")
-    if noise_std < 0:
-        raise ValueError("noise_std must be non-negative")
-    if sound_speed_m_s <= 0:
-        raise ValueError("sound_speed_m_s must be positive")
-
     sample_count = int(round(sampling_rate_hz * duration_s))
     time_s = np.arange(sample_count, dtype=float) / sampling_rate_hz
     signals = np.zeros((len(array.positions_m), sample_count), dtype=float)

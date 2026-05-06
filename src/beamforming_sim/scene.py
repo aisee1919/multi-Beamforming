@@ -32,10 +32,6 @@ class AcousticSource:
 
     def __post_init__(self) -> None:
         self.position_m = np.asarray(self.position_m, dtype=float)
-        if self.position_m.shape != (3,):
-            raise ValueError("position_m must be a 3D coordinate")
-        if self.frequency_hz <= 0:
-            raise ValueError("frequency_hz must be positive")
 
 
 @dataclass
@@ -71,19 +67,12 @@ def create_scan_planes(
 ) -> list[ScanPlane]:
     """创建多个与麦克风阵列平行的扫描平面。"""
 
-    if step_m <= 0:
-        raise ValueError("step_m must be positive")
-    if extent_m[0] > extent_m[1]:
-        raise ValueError("extent_m lower bound must not exceed upper bound")
-
     # 扫描步长使用 0.01 m，确保 x=+-0.5 m 这类声源位置落在扫描网格上。
     coordinates = _inclusive_grid(extent_m[0], extent_m[1], step_m)
     grid_x, grid_y = np.meshgrid(coordinates, coordinates, indexing="xy")
 
     planes = []
     for distance in distances_m:
-        if distance <= 0:
-            raise ValueError("distances must be positive")
         # 每个扫描平面的 z 坐标固定为其到阵列平面的距离。
         grid_z = np.full_like(grid_x, distance, dtype=float)
         points = np.column_stack((grid_x.ravel(), grid_y.ravel(), grid_z.ravel()))
@@ -103,6 +92,4 @@ def _inclusive_grid(start: float, stop: float, step: float) -> np.ndarray:
 
     count = int(round((stop - start) / step)) + 1
     values = start + step * np.arange(count, dtype=float)
-    if not np.isclose(values[-1], stop):
-        raise ValueError("extent_m must be divisible by step_m")
     return np.round(values, decimals=12)
