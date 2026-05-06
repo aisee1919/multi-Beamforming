@@ -53,10 +53,15 @@ class FFTFISTABeamformer(CsmBasedBeamformer):
         self,
         cbf_result: BeamformingResult,
         array: MicrophoneArray,
-        frequency_hz: float,
-        sound_speed_m_s: float = 343.0,
+        sound_speed_m_s: float | None = None,
     ) -> BeamformingResult:
-        """从 CBF 原始功率图出发，运行 FFT-FISTA 反卷积。"""
+        """从 CBF 原始功率图出发，运行 FFT-FISTA 反卷积。
+
+        frequency_hz / sound_speed_m_s 默认取自 cbf_result，避免手动传错导致
+        dirty map 和 PSF 频率不一致。
+        """
+        frequency_hz = cbf_result.frequency_hz
+        sound_speed_m_s = sound_speed_m_s if sound_speed_m_s is not None else cbf_result.sound_speed_m_s
         return self._deconvolve(array, cbf_result.plane, cbf_result.raw_power, frequency_hz, sound_speed_m_s)
 
     def _deconvolve(

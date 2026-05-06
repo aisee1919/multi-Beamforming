@@ -87,7 +87,7 @@ def test_fft_fista_returns_beamforming_result_not_ndarray():
     _, signals = simulate_microphone_signals(array, source_model, duration_s=0.01, noise_std=0.0)
 
     cbf_result = ConventionalBeamformer().run(array, plane, signals, sampling_rate_hz=192_000, frequency_hz=25_000)
-    fft_fista_result = FFTFISTABeamformer().run_from_cbf_map(cbf_result, array, 25_000)
+    fft_fista_result = FFTFISTABeamformer().run_from_cbf_map(cbf_result, array)
 
     assert isinstance(fft_fista_result, BeamformingResult)
     assert fft_fista_result.algorithm == "FFT-FISTA"

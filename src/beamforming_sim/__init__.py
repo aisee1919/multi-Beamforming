@@ -1,6 +1,11 @@
 """声学波束形成仿真包。"""
 
-from beamforming_sim.algorithms import ConventionalBeamformer, FFTFISTABeamformer, FunctionalBeamformer
+from beamforming_sim.algorithms import (
+    ConventionalBeamformer,
+    DAMASFISTABeamformer,
+    FFTFISTABeamformer,
+    FunctionalBeamformer,
+)
 from beamforming_sim.algorithms.cbf import conventional_beamforming, run_cbf_for_planes
 from beamforming_sim.algorithms.fb import functional_beamforming, run_fb_for_planes
 from beamforming_sim.array_geometry import MicrophoneArray, SpiralArrayConfig, create_eight_arm_spiral_array
@@ -15,6 +20,7 @@ __all__ = [
     "BeamformingExperiment",
     "BeamformingResult",
     "ConventionalBeamformer",
+    "DAMASFISTABeamformer",
     "ExperimentConfig",
     "FFTFISTABeamformer",
     "FunctionalBeamformer",

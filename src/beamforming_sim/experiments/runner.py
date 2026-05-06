@@ -115,7 +115,7 @@ class BeamformingExperiment:
                 algorithm_paths.setdefault("FB", []).append(fb_path)
 
             # FFT-FISTA
-            fft_fista_result = self._fft_fista.run_from_cbf_map(cbf_result, array, config.source.frequency_hz)
+            fft_fista_result = self._fft_fista.run_from_cbf_map(cbf_result, array)
             fft_fista_path = writer.write_heatmap(
                 fft_fista_result,
                 source_index=case.index,

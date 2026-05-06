@@ -13,7 +13,7 @@ def _run_algorithms(array, plane, source_position, frequency_hz=25_000, sampling
     source_model = SourceModel([AcousticSource(position_m=np.array(source_position))])
     _, signals = simulate_microphone_signals(array, source_model, duration_s=0.01, noise_std=0.0)
     cbf_result = ConventionalBeamformer().run(array, plane, signals, sampling_rate_hz, frequency_hz)
-    fft_fista_result = FFTFISTABeamformer().run_from_cbf_map(cbf_result, array, frequency_hz)
+    fft_fista_result = FFTFISTABeamformer().run_from_cbf_map(cbf_result, array)
     return cbf_result, fft_fista_result
 
 

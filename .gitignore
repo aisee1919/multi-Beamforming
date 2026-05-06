@@ -1,4 +1,5 @@
 .venv/
+.venv-wsl/
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -6,3 +7,4 @@ pytest-cache-files-*/
 *.egg-info/
 outputs/
 .claude/
+.codex

@@ -37,16 +37,19 @@ def plot_energy_heatmap(
     title: str | None = None,
     floor_db: float = -50.0,
     tick_step_m: float = 0.1,
+    interpolation: str = "bilinear",
+    peak_position: tuple[float, float] | None = None,
 ) -> Path:
-    """绘制与参考图匹配的 dB 声学热力图。
+    """绘制 dB 声学热力图。
 
     energy 按 plane.points_m 顺序排列；图中显示相对峰值 dB，色标范围为 0 到 floor_db。
+    可通过 interpolation="nearest" 使 DAMAS 等稀疏结果的网格点可见。
+    peak_position 为可选的 (x, y) 坐标，标记峰值位置。
     """
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # 热力图数据必须和扫描网格一一对应，否则图像会错误映射到空间位置。
     expected_size = len(plane.x_coordinates_m) * len(plane.y_coordinates_m)
     if energy.size != expected_size:
         raise ValueError("energy size must match scan plane grid size")
@@ -68,9 +71,13 @@ def plot_energy_heatmap(
         cmap=cmap,
         vmin=floor_db,
         vmax=0.0,
-        interpolation="bilinear",
+        interpolation=interpolation,
         aspect="equal",
     )
+
+    if peak_position is not None:
+        ax.plot(peak_position[0], peak_position[1], "r*", markersize=10, markeredgewidth=0.5)
+
     ax.set_xlabel("x / m")
     ax.set_ylabel("y / m")
     ax.set_xticks(tick_values((plane.x_coordinates_m[0], plane.x_coordinates_m[-1]), tick_step_m))
