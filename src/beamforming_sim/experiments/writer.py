@@ -5,7 +5,6 @@ from pathlib import Path
 
 from beamforming_sim.array_geometry import MicrophoneArray
 from beamforming_sim.domain import BeamformingResult
-from beamforming_sim.experiments.cases import SourceCase
 from beamforming_sim.scene import SourceModel
 from beamforming_sim.visualization import plot_array_layout, plot_energy_heatmap, plot_source_signals
 
@@ -37,27 +36,35 @@ class ResultWriter:
             output_path=self.output_dir / "source_signals.png",
         )
 
-    def write_heatmap(self, case: SourceCase, result: BeamformingResult) -> Path:
-        """统一的波束形成热力图写入。
-
-        路径和标题由 result.algorithm 与 result.metadata 自动生成，新算法无需额外方法。
-        """
+    def write_heatmap(
+        self,
+        result: BeamformingResult,
+        source_index: int = 1,
+        source_x_m: float = 0.0,
+        source_y_m: float = 0.0,
+    ) -> Path:
+        """波束形成热力图写入，不依赖 SourceCase 类型。"""
         algo_key = result.algorithm.lower().replace("-", "_")
         subdir = self.output_dir / f"{algo_key}_single_source"
 
-        stem = f"{algo_key}_source_{case.index:02d}_z_{case.z_m:.1f}m"
-        title = f"{result.algorithm}(z={case.z_m:g}m"
+        stem = f"{algo_key}_source_{source_index:02d}"
+        title = f"{result.algorithm}"
+
+        plane = result.plane
+        z = plane.distance_m
+        stem += f"_z_{z:.1f}m"
+        title += f"(z={z:g}m"
 
         nu = (result.metadata or {}).get("nu")
         if nu is not None:
             stem += f"_nu{int(nu):02d}"
             title += f", nu={nu}"
         else:
-            stem += f"_x_{case.x_m:+.1f}_y_{case.y_m:+.1f}"
-            title += f", x={case.x_m:g}m, y={case.y_m:g}m"
+            stem += f"_x_{source_x_m:+.1f}_y_{source_y_m:+.1f}"
+            title += f", x={source_x_m:g}m, y={source_y_m:g}m"
         title += ")"
 
         return plot_energy_heatmap(
-            case.plane, result.raw_power, subdir / f"{stem}.png",
+            plane, result.raw_power, subdir / f"{stem}.png",
             title=title, tick_step_m=self.tick_step_m,
         )

@@ -69,8 +69,6 @@ def _validate_config(config: SpiralArrayConfig) -> None:
         raise ValueError("arms must be positive")
     if config.elements % config.arms != 0:
         raise ValueError("elements must be divisible by arms")
-    if config.arms != 8:
-        raise ValueError("this setup is fixed to an eight-arm spiral array")
     if config.aperture_m <= 0:
         raise ValueError("aperture_m must be positive")
     if config.spiral_turns < 0:

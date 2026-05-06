@@ -2,7 +2,7 @@ import numpy as np
 
 from beamforming_sim.algorithms import ConventionalBeamformer, FFTFISTABeamformer, FunctionalBeamformer
 from beamforming_sim.array_geometry import create_eight_arm_spiral_array
-from beamforming_sim.beamforming import conventional_beamforming
+from beamforming_sim.algorithms.cbf import conventional_beamforming
 from beamforming_sim.domain import BeamformingResult
 from beamforming_sim.experiments import ExperimentConfig, build_single_source_cases
 from beamforming_sim.scene import AcousticSource, SourceModel, create_scan_planes
@@ -57,10 +57,10 @@ def test_functional_beamformer_nu1_matches_cbf_raw_power():
 def test_experiment_config_keeps_default_heatmap_signals_noise_free():
     config = ExperimentConfig()
 
-    assert config.microphone_noise_std == 0.0
-    assert config.source_waveform_noise_std == 0.0
-    assert config.scan_step_m == 0.01
-    assert config.tick_step_m == 0.1
+    assert config.signal.microphone_noise_std == 0.0
+    assert config.signal.source_waveform_noise_std == 0.0
+    assert config.scan.step_m == 0.01
+    assert config.scan.tick_step_m == 0.1
 
 
 def test_single_source_cases_bind_each_candidate_source_to_its_plane():

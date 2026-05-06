@@ -2,12 +2,9 @@ import numpy as np
 
 from beamforming_sim.algorithms.fb import csm_power_eig
 from beamforming_sim.array_geometry import create_eight_arm_spiral_array
-from beamforming_sim.beamforming import (
-    compute_cross_spectral_matrix,
-    conventional_beamforming,
-    functional_beamforming,
-    run_fb_for_planes,
-)
+from beamforming_sim.algorithms.cbf import conventional_beamforming
+from beamforming_sim.algorithms.fb import functional_beamforming, run_fb_for_planes
+from beamforming_sim.spectral import compute_cross_spectral_matrix
 from beamforming_sim.scene import AcousticSource, SourceModel, create_default_sources, create_scan_planes
 from beamforming_sim.signals import simulate_microphone_signals
 

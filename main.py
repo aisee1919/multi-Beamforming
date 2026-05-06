@@ -16,17 +16,11 @@ def main() -> None:
     print(f"array layout: {summary.array_layout_path}")
     print(f"source waveform: {summary.source_waveform_path}")
 
-    print(f"\nCBF heatmaps ({len(summary.cbf_paths)}):")
-    for path in summary.cbf_paths:
-        print(f"  {path}")
-
-    print(f"\nFB heatmaps ({len(summary.fb_paths)}):")
-    for path in summary.fb_paths:
-        print(f"  {path}")
-
-    print(f"\nFFT-FISTA heatmaps ({len(summary.fft_fista_paths)}):")
-    for path in summary.fft_fista_paths:
-        print(f"  {path}")
+    for algo_name in ("CBF", "FB", "FFT-FISTA"):
+        paths = summary.algorithm_paths.get(algo_name, [])
+        print(f"\n{algo_name} heatmaps ({len(paths)}):")
+        for path in paths:
+            print(f"  {path}")
 
 
 if __name__ == "__main__":

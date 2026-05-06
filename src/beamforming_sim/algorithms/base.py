@@ -49,16 +49,6 @@ def validate_csm(array: MicrophoneArray, csm: np.ndarray) -> None:
         raise ValueError("csm shape must match microphone count")
 
 
-def normalize_power(power: np.ndarray) -> np.ndarray:
-    """保留给兼容 API 使用的峰值归一化。"""
-
-    power = np.asarray(power, dtype=float)
-    max_power = float(np.max(power))
-    if max_power <= 0.0:
-        return power
-    return power / max_power
-
-
 class CsmBasedBeamformer:
     """基于 CSM 的波束形成器共用流程：signals → CSM → run_from_csm。
 
