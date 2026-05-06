@@ -2,19 +2,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from beamforming_sim.algorithms import (
-    ConventionalBeamformer,
-    FunctionalBeamformer,
-    cbf_power_from_csm,
-    csm_power_eig,
-    fb_power_from_transformed_csm,
-    normalize_power,
-    steering_matrix,
-)
-from beamforming_sim.algorithms.base import validate_beamforming_inputs
+from beamforming_sim.algorithms.base import normalize_power, validate_beamforming_inputs
+from beamforming_sim.algorithms.cbf import ConventionalBeamformer, cbf_power_from_csm, steering_matrix
+from beamforming_sim.algorithms.fb import FunctionalBeamformer, csm_power_eig, fb_power_from_transformed_csm
 from beamforming_sim.array_geometry import MicrophoneArray
 from beamforming_sim.scene import ScanPlane
-from beamforming_sim.spectral import compute_cross_spectral_matrix, validate_signal_inputs
+from beamforming_sim.spectral import compute_cross_spectral_matrix
 
 
 def conventional_beamforming(
@@ -115,7 +108,3 @@ def _fb_from_csm(
     return normalize_power(fb_power_from_transformed_csm(array, plane, csm_pow, nu, frequency_hz, sound_speed_m_s))
 
 
-_steering_matrix = steering_matrix
-_normalize_energy = normalize_power
-_csm_power_eig = csm_power_eig
-_validate_signal_inputs = validate_signal_inputs

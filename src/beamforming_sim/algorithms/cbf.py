@@ -4,15 +4,14 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from beamforming_sim.algorithms.base import validate_beamforming_inputs, validate_csm
+from beamforming_sim.algorithms.base import CsmBasedBeamformer, validate_csm
 from beamforming_sim.array_geometry import MicrophoneArray
 from beamforming_sim.domain import BeamformingResult
 from beamforming_sim.scene import ScanPlane
-from beamforming_sim.spectral import compute_cross_spectral_matrix
 
 
 @dataclass(frozen=True)
-class ConventionalBeamformer:
+class ConventionalBeamformer(CsmBasedBeamformer):
     """传统波束形成算法。
 
     类接口返回原始功率；旧函数接口需要兼容历史行为时再做归一化。
@@ -23,21 +22,6 @@ class ConventionalBeamformer:
     @property
     def name(self) -> str:
         return "CBF"
-
-    def run(
-        self,
-        array: MicrophoneArray,
-        plane: ScanPlane,
-        signals: np.ndarray,
-        sampling_rate_hz: float,
-        frequency_hz: float,
-        sound_speed_m_s: float = 343.0,
-        block_size: int | None = None,
-        overlap: float = 0.5,
-    ) -> BeamformingResult:
-        validate_beamforming_inputs(array, signals, sampling_rate_hz, frequency_hz, sound_speed_m_s)
-        csm = compute_cross_spectral_matrix(signals, sampling_rate_hz, frequency_hz, block_size, overlap)
-        return self.run_from_csm(array, plane, csm, frequency_hz, sound_speed_m_s)
 
     def run_from_csm(
         self,

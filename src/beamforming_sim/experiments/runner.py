@@ -84,12 +84,12 @@ class BeamformingExperiment:
             csm = compute_cross_spectral_matrix(signals, config.sampling_rate_hz, config.frequency_hz)
 
             cbf_result = cbf.run_from_csm(array, case.plane, csm, config.frequency_hz)
-            cbf_paths.append(writer.write_cbf_heatmap(case, cbf_result))
+            cbf_paths.append(writer.write_heatmap(case, cbf_result))
 
             fb_paths.extend(self._run_fb_cases(array, case, csm, writer))
 
             fft_fista_result = fft_fista.run_from_cbf_map(cbf_result, array, config.frequency_hz)
-            fft_fista_paths.append(writer.write_fft_fista_heatmap(case, fft_fista_result))
+            fft_fista_paths.append(writer.write_heatmap(case, fft_fista_result))
 
         return ExperimentSummary(
             microphone_count=len(array.positions_m),
@@ -108,5 +108,5 @@ class BeamformingExperiment:
         paths: list[Path] = []
         for nu in self.config.fb_nu_values:
             fb_result = FunctionalBeamformer(nu=nu).run_from_csm(array, case.plane, csm, self.config.frequency_hz)
-            paths.append(writer.write_fb_heatmap(case, fb_result, nu))
+            paths.append(writer.write_heatmap(case, fb_result))
         return paths

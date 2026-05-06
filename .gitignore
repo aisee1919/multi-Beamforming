@@ -5,3 +5,4 @@ __pycache__/
 pytest-cache-files-*/
 *.egg-info/
 outputs/
+.claude/

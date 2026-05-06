@@ -1,8 +1,8 @@
 import numpy as np
 
+from beamforming_sim.algorithms.fb import csm_power_eig
 from beamforming_sim.array_geometry import create_eight_arm_spiral_array
 from beamforming_sim.beamforming import (
-    _csm_power_eig,
     compute_cross_spectral_matrix,
     conventional_beamforming,
     functional_beamforming,
@@ -47,7 +47,7 @@ def test_csm_power_is_hermitian():
     csm = compute_cross_spectral_matrix(signals, sampling_rate_hz=192_000, frequency_hz=25_000)
 
     for exponent in (1.0, 0.5, 0.25):
-        csm_pow = _csm_power_eig(csm, exponent)
+        csm_pow = csm_power_eig(csm, exponent)
         assert csm_pow.shape == csm.shape
         assert np.allclose(csm_pow, csm_pow.conj().T), f"exponent={exponent}: not Hermitian"
 
